@@ -33,91 +33,57 @@ package com.darekbx.workouts
  */
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.graphics.Color
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.compose.runtime.livedata.observeAsState
 import com.darekbx.workouts.data.WorkoutsDao
-import com.darekbx.workouts.data.dto.Marker
+import com.darekbx.workouts.ui.navigation.BottomAppBar
+import com.darekbx.workouts.ui.navigation.NavigationItem
+import com.darekbx.workouts.ui.settings.SettingsScreen
 import com.darekbx.workouts.ui.theme.WorkoutsTheme
+import com.darekbx.workouts.ui.workouts.WorkoutsScreen
+import com.darekbx.workouts.viewmodels.WorkoutsViewModel
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
-import java.util.*
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    @Inject lateinit var workoutsDao: WorkoutsDao
+    @Inject lateinit var workoutsViewModel: WorkoutsViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             WorkoutsTheme {
-                // A surface container using the 'background' color from the theme
-                Surface(color = MaterialTheme.colors.background) {
-                    WorkoutsScreen()
-                }
+                val navController = rememberNavController()
+                Scaffold(
+                    backgroundColor = Color.Black,
+                    bottomBar = { BottomAppBar(navController) },
+                    content = { Navigation(navController) }
+                )
             }
         }
+    }
 
-        CoroutineScope(Dispatchers.IO).launch {
+    @Composable
+    fun Navigation(navController: NavHostController) {
+        NavHost(navController, startDestination = NavigationItem.Home.route) {
+            composable(NavigationItem.Home.route) {
 
-            Log.v("--------------", "Add")
-            val a = workoutsDao.addMarker(Marker(UUID.randomUUID().toString(), "x", System.currentTimeMillis(), 1))
-                Log.v("--------------", "Add result: $a")
+                val workouts = workoutsViewModel.workouts().observeAsState(listOf())
+                WorkoutsScreen(workouts)
 
-            Log.v("--------------", "List markers")
-            val m = workoutsDao.markers()
-                Log.v("--------------", "List markers, count: ${m.size}")
-
+            }
+            composable(NavigationItem.Settings.route) {
+                SettingsScreen()
+            }
         }
-    }
-}
-
-@Composable
-fun WorkoutsScreen() {
-    Column() {
-        Workouts(modifier = Modifier.fillMaxWidth().weight(1F))
-        WorkoutsMenu(modifier = Modifier.fillMaxWidth())
-    }
-}
-
-@Composable
-fun Workouts(modifier: Modifier) {
-    Column(modifier = modifier) {
-        (0 until 10).forEach {
-            Text(text = "$it")
-        }
-    }
-}
-
-@Composable
-fun WorkoutsMenu(modifier: Modifier = Modifier) {
-    Row(modifier = modifier) {
-        IconButton(onClick = { /*TODO*/ }) {
-            Icon(Icons.Filled.Settings, contentDescription = "Settings")
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun DefaultPreview() {
-    WorkoutsTheme {
-        WorkoutsScreen()
     }
 }
