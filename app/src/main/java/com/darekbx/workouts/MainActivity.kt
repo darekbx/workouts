@@ -35,6 +35,7 @@ package com.darekbx.workouts
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.material.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
@@ -43,7 +44,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.runtime.livedata.observeAsState
-import com.darekbx.workouts.data.WorkoutsDao
 import com.darekbx.workouts.ui.navigation.BottomAppBar
 import com.darekbx.workouts.ui.navigation.NavigationItem
 import com.darekbx.workouts.ui.settings.SettingsScreen
@@ -51,12 +51,11 @@ import com.darekbx.workouts.ui.theme.WorkoutsTheme
 import com.darekbx.workouts.ui.workouts.WorkoutsScreen
 import com.darekbx.workouts.viewmodels.WorkoutsViewModel
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    @Inject lateinit var workoutsViewModel: WorkoutsViewModel
+    private val workoutsViewModel: WorkoutsViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -78,7 +77,10 @@ class MainActivity : ComponentActivity() {
             composable(NavigationItem.Home.route) {
 
                 val workouts = workoutsViewModel.workouts().observeAsState(listOf())
-                WorkoutsScreen(workouts)
+                WorkoutsScreen(
+                    workouts,
+                    onAdd = workoutsViewModel::add
+                )
 
             }
             composable(NavigationItem.Settings.route) {

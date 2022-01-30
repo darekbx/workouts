@@ -1,7 +1,6 @@
 package com.darekbx.workouts.viewmodels
 
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.darekbx.workouts.data.WorkoutsDao
@@ -17,14 +16,13 @@ class WorkoutsViewModel @Inject constructor(
     private val workoutsDao: WorkoutsDao
 ): ViewModel() {
 
-    fun workouts(): LiveData<List<Workout>> {
-        val mutableLiveData = MutableLiveData<List<Workout>>()
+    fun workouts(): LiveData<List<Workout>> = workoutsDao.workouts()
+
+    fun add(workout: Workout) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-                val workouts = workoutsDao.workouts()
-                mutableLiveData.value = workouts
+                workoutsDao.addWorkout(workout)
             }
         }
-        return mutableLiveData
     }
 }
