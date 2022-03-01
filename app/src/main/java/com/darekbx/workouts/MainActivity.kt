@@ -77,10 +77,7 @@ class MainActivity : ComponentActivity() {
             composable(NavigationItem.Home.route) {
 
                 val workouts = workoutsViewModel.workouts().observeAsState(listOf())
-                WorkoutsScreen(
-                    workouts,
-                    onAdd = workoutsViewModel::add
-                )
+                WorkoutsScreen(workouts)
 
             }
             composable(NavigationItem.Settings.route) {

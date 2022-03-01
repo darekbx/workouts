@@ -27,11 +27,15 @@ fun SettingsNavigation(navController: NavHostController) {
         composable(SettingsNavigationItem.Settings.route) {
             SettingsMenu(navController)
         }
-        composable(SettingsNavigationItem.MovieSettings.route) {
-            MoviesSettings()
+        composable(SettingsNavigationItem.WorkoutsSettings.route) {
+            WorkoutsSettings(onAdd = { navController.navigate(SettingsNavigationItem.AddWorkout.route) })
         }
         composable(SettingsNavigationItem.PlaybackSettings.route) {
             PlaybackSettings()
+        }
+        composable(SettingsNavigationItem.AddWorkout.route) {
+            // TODO pass workout uid to edit
+            EditWorkout()
         }
     }
 }
@@ -41,10 +45,10 @@ private fun SettingsMenu(navController: NavHostController) {
     Column(Modifier.padding(16.dp)) {
         CreateButton(
             Modifier.fillMaxWidth(),
-            name = "Movies",
+            name = "Workouts",
             description = "Add or delete workouts"
         ) {
-            navController.navigate(SettingsNavigationItem.MovieSettings.route)
+            navController.navigate(SettingsNavigationItem.WorkoutsSettings.route)
         }
         CreateButton(
             Modifier.fillMaxWidth(),
