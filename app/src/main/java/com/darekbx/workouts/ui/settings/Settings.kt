@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -15,12 +16,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.darekbx.workouts.ui.theme.Typography
 
+@ExperimentalComposeUiApi
 @Composable
 fun SettingsScreen() {
     val navController = rememberNavController()
     SettingsNavigation(navController)
 }
 
+@ExperimentalComposeUiApi
 @Composable
 fun SettingsNavigation(navController: NavHostController) {
     NavHost(navController, startDestination = SettingsNavigationItem.Settings.route) {
