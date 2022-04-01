@@ -38,21 +38,12 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import java.lang.RuntimeException
 
-/**
- * TODO:
- *  - add validation
- *  - split to two screens:
- *    - Select preview frame
- *    - Markers
- *  - Name will added in dialog which will be shown after tapping "Save"
- *
- */
-
 @Preview
 @Composable
 fun EditWorkout(
     workoutsViewModel: WorkoutsViewModel = hiltViewModel(),
-    workoutUid: String? = null
+    workoutUid: String? = null,
+    onCompleted: () -> Unit = { }
 ) {
     val markers = remember { mutableStateListOf<Long>() }
     var movieUri by remember { mutableStateOf(null as Uri?) }
@@ -60,15 +51,13 @@ fun EditWorkout(
     var previewFrame by remember { mutableStateOf(null as Bitmap?) }
     val movieLength = remember { mutableStateOf(0L) }
 
-    var selectFrameDialogState = remember { mutableStateOf(false) }
-    var setMarkersDialogState = remember { mutableStateOf(false) }
+    val selectFrameDialogState = remember { mutableStateOf(false) }
+    val setMarkersDialogState = remember { mutableStateOf(false) }
     var progressVisible by remember { mutableStateOf(false) }
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
-    ) {
-        movieUri = it
-    }
+    ) { movieUri = it }
 
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.padding(all = 8.dp)) {
@@ -78,62 +67,42 @@ fun EditWorkout(
                     .padding(top = 8.dp)
                     .fillMaxWidth(),
                 movieUri
-            ) {
-                launcher.launch("*/*")
-            }
+            ) { launcher.launch("*/*") }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            movieUri?.let { movieUri ->
+            movieUri?.let {
                 SelectPreviewFrameButton(
                     Modifier.fillMaxWidth(),
                     selectFrameDialogState,
                     previewFrame
                 )
                 SetMarkersButton(
-                    Modifier.padding(top = 8.dp).fillMaxWidth(),
+                    Modifier
+                        .padding(top = 8.dp)
+                        .fillMaxWidth(),
                     setMarkersDialogState,
                     markers
                 )
-
-                /*WorkoutPlayer(
-                    Modifier
-                        .fillMaxWidth()
-                        .height(300.dp),
-                    movieUri,
-                    movieLength,
-                    { marker -> markers.add(marker) },
-                    { frame -> previewFrame = frame }
-                )
-                Text(
-                    modifier = Modifier.padding(8.dp),
-                    text = "Markers"
-                )
-                Markers(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxSize()
-                        .padding(top = 8.dp),
-                    markers
-                )
-                Button(
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = {
-                        progressVisible = true
-                        workoutsViewModel.add(
-                            name.value,
-                            movieUri.toString(),
-                            movieLength.value,
-                            previewFrame!!
-                        ) {
-                            progressVisible = false
-
-                        }
-                    }
-                ) {
-                    Text(text = "Save")
-                }*/
             }
+            Spacer(modifier = Modifier.weight(1f))
+            Button(
+                modifier = Modifier.fillMaxWidth(),
+                enabled = markers.size > 0 && previewFrame != null && name.value.isNotEmpty(),
+                onClick = {
+                    progressVisible = false
+                    workoutsViewModel.add(
+                        name.value,
+                        movieUri?.toString()!!,
+                        movieLength.value,
+                        previewFrame!!,
+                        markers
+                    ) {
+                        progressVisible = false
+                        onCompleted()
+                    }
+                }
+            ) { Text(text = "Save") }
         }
 
         if (progressVisible) {
@@ -142,9 +111,7 @@ fun EditWorkout(
                     .fillMaxSize()
                     .background(Color.Black.copy(alpha = 0.33F)),
                 contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
+            ) { CircularProgressIndicator() }
         }
     }
 
@@ -152,9 +119,23 @@ fun EditWorkout(
         movieUri?.let {
             SelectPreviewFrame(
                 movieUri = it,
-                frameCallback = {
-                    previewFrame = it
+                frameCallback = { frame ->
+                    previewFrame = frame
                     selectFrameDialogState.value = false
+                },
+                movieLength = { length -> movieLength.value = length }
+            )
+        }
+    }
+
+    if (setMarkersDialogState.value) {
+        movieUri?.let {
+            SetMarkers(
+                movieUri = it,
+                markersCallback = { markersList ->
+                    markers.clear()
+                    markers.addAll(markersList)
+                    setMarkersDialogState.value = false
                 }
             )
         }
@@ -221,15 +202,14 @@ private fun WorkoutName(modifier: Modifier = Modifier, name: MutableState<String
 @Composable
 private fun SelectPreviewFrame(
     movieUri: Uri,
-    frameCallback: (Bitmap) -> Unit
+    frameCallback: (Bitmap) -> Unit,
+    movieLength: (Long) -> Unit
 ) {
     val context = LocalContext.current
     val player = SimpleExoPlayer.Builder(context).build()
     val playerView = PlayerView(context)
     val mediaItem = MediaItem.fromUri(movieUri)
-    val playWhenReady by rememberSaveable {
-        mutableStateOf(true)
-    }
+    val playWhenReady by rememberSaveable { mutableStateOf(true) }
     player.setMediaItem(mediaItem)
     playerView.player = player
 
@@ -240,10 +220,11 @@ private fun SelectPreviewFrame(
 
     var videoFrame by remember { mutableStateOf(null as Bitmap?) }
 
-    Column(Modifier
-        .fillMaxWidth()
-        .background(Color.Black)
-        .padding(8.dp)
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .background(Color.Black)
+            .padding(8.dp)
     ) {
         AndroidView(
             modifier = Modifier
@@ -260,7 +241,9 @@ private fun SelectPreviewFrame(
             modifier = Modifier.fillMaxWidth()
         ) {
             Button(
-                modifier = Modifier.fillMaxWidth().weight(0.5f),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(0.5f),
                 onClick = {
                     playerView.player?.pause()
                     playerView.hideController()
@@ -269,19 +252,87 @@ private fun SelectPreviewFrame(
                         videoFrame = it
                     }
                 }
-            ) {
-                Text("Select frame")
-            }
+            ) { Text("Select frame") }
             Spacer(modifier = Modifier.width(4.dp))
             Button(
-                modifier = Modifier.fillMaxWidth().weight(0.5f),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(0.5f),
                 onClick = {
+                    movieLength(playerView.player?.duration ?: 0L)
                     frameCallback(videoFrame!!)
                 },
                 enabled = videoFrame != null
-            ) {
-                Text("Confirm")
-            }
+            ) { Text("Confirm") }
+        }
+    }
+}
+
+@Composable
+private fun SetMarkers(
+    movieUri: Uri,
+    markersCallback: (List<Long>) -> Unit
+) {
+    val context = LocalContext.current
+    val player = SimpleExoPlayer.Builder(context).build()
+    val playerView = PlayerView(context)
+    val mediaItem = MediaItem.fromUri(movieUri)
+    val playWhenReady by rememberSaveable { mutableStateOf(true) }
+    player.setMediaItem(mediaItem)
+    playerView.player = player
+
+    val markers = remember { mutableStateListOf<Long>() }
+
+    LaunchedEffect(player) {
+        player.prepare()
+        player.playWhenReady = playWhenReady
+    }
+
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .background(Color.Black)
+            .padding(8.dp)
+    ) {
+        AndroidView(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(180.dp)
+                .weight(1F)
+                .padding(16.dp),
+            factory = { playerView }
+        )
+
+        Text(
+            modifier = Modifier.padding(8.dp),
+            text = "Markers"
+        )
+        Markers(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxSize()
+                .padding(top = 8.dp),
+            markers
+        )
+        Row(
+            horizontalArrangement = Arrangement.SpaceAround,
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+        ) {
+            AddMarkerButton(
+                Modifier
+                    .fillMaxWidth()
+                    .weight(0.5f),
+                onAddMarker = { markers.add(it) },
+                player
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Button(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(0.5f),
+                onClick = { markersCallback(markers) },
+                enabled = markers.isNotEmpty()
+            ) { Text("Confirm") }
         }
     }
 }
@@ -361,46 +412,6 @@ private fun MovieSelectButton(
 }
 
 @Composable
-private fun WorkoutPlayer(
-    modifier: Modifier = Modifier,
-    movieUri: Uri,
-    movieLength: MutableState<Long>,
-    onAddMarker: (Long) -> Unit,
-    onVideoFrame: (Bitmap) -> Unit
-) {
-    val context = LocalContext.current
-    val player = SimpleExoPlayer.Builder(context).build()
-    val playerView = PlayerView(context)
-    val mediaItem = MediaItem.fromUri(movieUri)
-    val playWhenReady by rememberSaveable {
-        mutableStateOf(true)
-    }
-    player.setMediaItem(mediaItem)
-    playerView.player = player
-
-    LaunchedEffect(player) {
-        player.prepare()
-        player.playWhenReady = playWhenReady
-        movieLength.value = player.duration
-    }
-
-    Column(modifier = modifier) {
-        AndroidView(
-            modifier = Modifier
-                .fillMaxSize()
-                .weight(1F),
-            factory = {
-                playerView
-            })
-        AddMarkerButton(
-            Modifier.fillMaxWidth(),
-            onAddMarker,
-            player
-        )
-    }
-}
-
-@Composable
 private fun AddMarkerButton(
     modifier: Modifier = Modifier,
     onAddMarker: (Long) -> Unit,
@@ -409,9 +420,7 @@ private fun AddMarkerButton(
     Button(
         modifier = modifier,
         onClick = { onAddMarker(player.currentPosition) }
-    ) {
-        Text(text = "Add marker")
-    }
+    ) { Text(text = "Add marker") }
 }
 
 private fun getVideoFrame(context: Context, uri: Uri, time: Long): Bitmap? {

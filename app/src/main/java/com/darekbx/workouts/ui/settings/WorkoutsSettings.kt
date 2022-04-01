@@ -59,8 +59,8 @@ fun ListWorkounts(modifier: Modifier = Modifier, workouts: List<Workout>) {
 @Composable
 private fun WorkoutItem(modifier: Modifier = Modifier, workout: Workout) {
     Row(modifier.fillMaxWidth()) {
-
-        Text(text = "${workout.name}")
-        Text(text = "${workout.length}")
+        Text(text = "${workout.name}", Modifier.padding(end = 8.dp))
+        Text(text = "${workout.length}", Modifier.padding(end = 8.dp))
+        Text(text = "${workout.moviePath}")
     }
 }

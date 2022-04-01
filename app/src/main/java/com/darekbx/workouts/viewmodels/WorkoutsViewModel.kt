@@ -5,6 +5,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.darekbx.workouts.data.WorkoutsDao
+import com.darekbx.workouts.data.dto.Marker
 import com.darekbx.workouts.data.dto.Workout
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -34,12 +35,14 @@ class WorkoutsViewModel @Inject constructor(
         uri: String,
         length: Long,
         previewFrame: Bitmap,
+        markers: List<Long>,
         onCompleted: () -> Unit = { }
     ) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
+                val workoutUid = UUID.randomUUID().toString()
                 val workout = Workout(
-                    UUID.randomUUID().toString(),
+                    workoutUid,
                     name!!,
                     uri,
                     lastPlayed = 0,
@@ -48,7 +51,17 @@ class WorkoutsViewModel @Inject constructor(
                     previewFrame.toByteArray()
                 )
                 workoutsDao.addWorkout(workout)
-                onCompleted()
+                markers.forEach { time ->
+                    workoutsDao.addMarker(Marker(
+                        UUID.randomUUID().toString(),
+                        workoutUid,
+                        time,
+                        0
+                    ))
+                }
+                withContext(Dispatchers.Main) {
+                    onCompleted()
+                }
             }
         }
     }

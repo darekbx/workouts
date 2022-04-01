@@ -38,7 +38,7 @@ fun SettingsNavigation(navController: NavHostController) {
         }
         composable(SettingsNavigationItem.AddWorkout.route) {
             // TODO pass workout uid to edit
-            EditWorkout()
+            EditWorkout(onCompleted = { navController.navigate(SettingsNavigationItem.WorkoutsSettings.route)  })
         }
     }
 }
