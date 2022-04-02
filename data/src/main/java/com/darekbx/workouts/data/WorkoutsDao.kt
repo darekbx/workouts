@@ -4,21 +4,21 @@ import androidx.lifecycle.LiveData
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
-import com.darekbx.workouts.data.dto.Marker
-import com.darekbx.workouts.data.dto.Workout
+import com.darekbx.workouts.data.dto.MarkerDto
+import com.darekbx.workouts.data.dto.WorkoutDto
 
 @Dao
 interface WorkoutsDao {
 
     @Query("SELECT * FROM workout")
-    fun workouts(): LiveData<List<Workout>>
+    fun workouts(): LiveData<List<WorkoutDto>>
 
     @Insert
-    fun addWorkout(workout: Workout): Long
+    fun addWorkout(workoutDto: WorkoutDto): Long
 
     @Query("SELECT * FROM marker")
-    fun markers(): LiveData<List<Marker>>
+    fun markers(): LiveData<List<MarkerDto>>
 
     @Insert
-    fun addMarker(marker: Marker): Long
+    fun addMarker(markerDto: MarkerDto): Long
 }

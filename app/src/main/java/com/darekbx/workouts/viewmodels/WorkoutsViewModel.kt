@@ -2,11 +2,14 @@ package com.darekbx.workouts.viewmodels
 
 import android.graphics.Bitmap
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.Transformations
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.darekbx.workouts.data.WorkoutsDao
-import com.darekbx.workouts.data.dto.Marker
-import com.darekbx.workouts.data.dto.Workout
+import com.darekbx.workouts.data.dto.MarkerDto
+import com.darekbx.workouts.data.dto.WorkoutDto
+import com.darekbx.workouts.model.Workout
+import com.darekbx.workouts.model.Workout.Companion.toDomain
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -20,12 +23,14 @@ class WorkoutsViewModel @Inject constructor(
     private val workoutsDao: WorkoutsDao
 ): ViewModel() {
 
-    fun workouts(): LiveData<List<Workout>> = workoutsDao.workouts()
+    fun workouts(): LiveData<List<Workout>> = Transformations.map(workoutsDao.workouts()) { dtos ->
+        dtos.map { it.toDomain() }
+    }
 
-    fun add(workout: Workout) {
+    fun add(workoutDto: WorkoutDto) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-                workoutsDao.addWorkout(workout)
+                workoutsDao.addWorkout(workoutDto)
             }
         }
     }
@@ -41,7 +46,7 @@ class WorkoutsViewModel @Inject constructor(
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val workoutUid = UUID.randomUUID().toString()
-                val workout = Workout(
+                val workout = WorkoutDto(
                     workoutUid,
                     name!!,
                     uri,
@@ -52,7 +57,7 @@ class WorkoutsViewModel @Inject constructor(
                 )
                 workoutsDao.addWorkout(workout)
                 markers.forEach { time ->
-                    workoutsDao.addMarker(Marker(
+                    workoutsDao.addMarker(MarkerDto(
                         UUID.randomUUID().toString(),
                         workoutUid,
                         time,

@@ -5,7 +5,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 @Entity(tableName = "workout")
-data class Workout(
+data class WorkoutDto(
     @PrimaryKey val uid: String,
     @ColumnInfo(name = "name") val name: String,
     @ColumnInfo(name = "movie_path") val moviePath: String,

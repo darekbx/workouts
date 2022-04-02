@@ -15,7 +15,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.darekbx.workouts.data.dto.Workout
+import com.darekbx.workouts.model.Workout
 import com.darekbx.workouts.viewmodels.WorkoutsViewModel
 
 @ExperimentalComposeUiApi

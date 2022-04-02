@@ -5,7 +5,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 @Entity(tableName = "marker")
-class Marker(
+class MarkerDto(
     @PrimaryKey
     val uid: String,
     @ColumnInfo(name = "workout_uid") val workoutUid: String,
