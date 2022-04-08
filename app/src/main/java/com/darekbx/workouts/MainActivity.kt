@@ -1,14 +1,12 @@
 package com.darekbx.workouts
 
 /**
+ *
+ * Check if AirPods are connected
+ *
  * Settings:
  *  - fast forward inverval e.g. +/-10s (10s, 20s, 30s, ...)
  *  - play speed increase e.g. +/-5% (5%, 10%, 20%, ...)
- *  - movies:
- *    - add new movie
- *    - select name
- *    - choose frame for preview
- *    - add time markers for training steps*
  *
  * First screen:
  *  - list of the trainings:
@@ -28,8 +26,6 @@ package com.darekbx.workouts
  *  - play speed buttons e.g. -5%, +5% (configurable in settings)
  *  - play speed is displayed
  *  - training step skip/redo*
- *
- *  * - optional
  */
 
 import android.os.Bundle
@@ -52,6 +48,7 @@ import com.darekbx.workouts.ui.navigation.BottomAppBar
 import com.darekbx.workouts.ui.navigation.NavigationItem
 import com.darekbx.workouts.ui.settings.SettingsScreen
 import com.darekbx.workouts.ui.theme.WorkoutsTheme
+import com.darekbx.workouts.ui.workout.WorkoutScreen
 import com.darekbx.workouts.ui.workouts.WorkoutsScreen
 import com.darekbx.workouts.viewmodels.WorkoutsViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -83,10 +80,14 @@ class MainActivity : ComponentActivity() {
     fun Navigation(navController: NavHostController) {
         NavHost(navController, startDestination = NavigationItem.Home.route) {
             composable(NavigationItem.Home.route) {
-
                 val workouts = workoutsViewModel.workouts().observeAsState(listOf())
-                WorkoutsScreen(workouts)
-
+                WorkoutsScreen(workouts) {
+                    val args = mapOf("uuid" to it.uid)
+                    navController.navigate(NavigationItem.Workout.apply { arguments = args }.route)
+                }
+            }
+            composable(NavigationItem.Workout.route) {
+                WorkoutScreen(NavigationItem.Workout.arguments["uuid"] as String)
             }
             composable(NavigationItem.Settings.route) {
                 SettingsScreen()

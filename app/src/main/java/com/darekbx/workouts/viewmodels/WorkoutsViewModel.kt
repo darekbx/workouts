@@ -1,6 +1,7 @@
 package com.darekbx.workouts.viewmodels
 
 import android.graphics.Bitmap
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Transformations
 import androidx.lifecycle.ViewModel
@@ -10,6 +11,8 @@ import com.darekbx.workouts.data.dto.MarkerDto
 import com.darekbx.workouts.data.dto.WorkoutDto
 import com.darekbx.workouts.model.Workout
 import com.darekbx.workouts.model.Workout.Companion.toDomain
+import com.darekbx.workouts.utils.FastForwardIncrease
+import com.darekbx.workouts.utils.PlaybackSpeed
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -23,16 +26,11 @@ class WorkoutsViewModel @Inject constructor(
     private val workoutsDao: WorkoutsDao
 ): ViewModel() {
 
+    var playbackSpeed = mutableStateOf(PlaybackSpeed.SPEED_1_0)
+    var fastForwardIncrease = mutableStateOf(FastForwardIncrease.FF_10)
+
     fun workouts(): LiveData<List<Workout>> = Transformations.map(workoutsDao.workouts()) { dtos ->
         dtos.map { it.toDomain() }
-    }
-
-    fun add(workoutDto: WorkoutDto) {
-        viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                workoutsDao.addWorkout(workoutDto)
-            }
-        }
     }
 
     fun add(
@@ -71,12 +69,19 @@ class WorkoutsViewModel @Inject constructor(
         }
     }
 
+    fun delete(workout: Workout) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                workoutsDao.deleteWorkoutMarkers(workout.uid)
+                workoutsDao.deleteWorkout(workout.uid)
+            }
+        }
+    }
+
     private fun Bitmap.toByteArray(): ByteArray {
         ByteArrayOutputStream().use { stream ->
-            compress(Bitmap.CompressFormat.JPEG, 90, stream)
-            val byteArray: ByteArray = stream.toByteArray()
-            //recycle()
-            return byteArray
+            compress(Bitmap.CompressFormat.PNG, 90, stream)
+            return stream.toByteArray()
         }
     }
 }

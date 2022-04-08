@@ -16,6 +16,12 @@ interface WorkoutsDao {
     @Insert
     fun addWorkout(workoutDto: WorkoutDto): Long
 
+    @Query("DELETE FROM workout WHERE uid = :uid")
+    fun deleteWorkout(uid: String)
+
+    @Query("DELETE FROM marker WHERE workout_uid = :uid")
+    fun deleteWorkoutMarkers(uid: String)
+
     @Query("SELECT * FROM marker")
     fun markers(): LiveData<List<MarkerDto>>
 

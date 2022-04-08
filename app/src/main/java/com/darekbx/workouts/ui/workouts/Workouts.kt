@@ -1,9 +1,7 @@
 package com.darekbx.workouts.ui.workouts
 
-import android.graphics.Bitmap
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,46 +17,57 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.imageResource
+import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.darekbx.workouts.R
 import com.darekbx.workouts.model.Workout
+import com.darekbx.workouts.utils.toFormattedDateTime
+import java.util.concurrent.TimeUnit
 
 @Composable
 fun WorkoutsScreen(
-    workouts: State<List<Workout>>
+    workouts: State<List<Workout>>,
+    onWorkoutClick: (Workout) -> Unit
 ) {
     Workouts(
         modifier = Modifier
             .fillMaxWidth()
             .fillMaxHeight(),
             workouts.value
-    )
+    ) { onWorkoutClick(it) }
 }
 
 @Composable
 fun Workouts(
     modifier: Modifier,
-    workouts: List<Workout>
+    workouts: List<Workout>,
+    onWorkoutClick: (Workout) -> Unit = { }
 ) {
     LazyColumn(modifier = modifier) {
         items(workouts) {
             WorkoutItem(
                 Modifier
                     .fillMaxWidth()
-                    .padding(4.dp), it.copy(thumbnail = ImageBitmap.imageResource(id = R.drawable.preview_frame).asAndroidBitmap()))
+                    .padding(4.dp)
+                    .clickable { onWorkoutClick(it) },
+                it//.copy(thumbnail = ImageBitmap.imageResource(id = R.drawable.preview_frame).asAndroidBitmap())
+            )
         }
     }
 }
 
-@Preview
+@Preview(device = Devices.PIXEL_2_XL)
 @Composable
 fun WorkoutItem(
     modifier: Modifier = Modifier,
-    workout: Workout = defaultWorkout.copy(
-        thumbnail = ImageBitmap.imageResource(id = R.drawable.preview_frame).asAndroidBitmap()
-    )
+    workout: Workout = defaultWorkout()
 ) {
+    val lengthMinutes = TimeUnit.MILLISECONDS.toMinutes(workout.length)
+    val lastPlayed = workout.lastPlayed
+        .takeIf { it > 0 }
+        ?.toFormattedDateTime()
+        ?: "N/A"
     Row(modifier) {
         Image(
             modifier = Modifier
@@ -73,15 +82,15 @@ fun WorkoutItem(
                 text = "${workout.name}",
                 style = MaterialTheme.typography.h5
             )
-            LabelText(label = "Last played: ", value = "${workout.lastPlayed}")
+            LabelText(label = "Length: ", value = "${lengthMinutes} minutes")
+            LabelText(label = "Last played: ", value = lastPlayed)
             LabelText(label = "Times played: ", value = "${workout.timesPlayed}")
-            LabelText(label = "Length: ", value = "${workout.length / 1000}s")
         }
     }
 }
 
 @Composable
-private fun LabelText(modifier: Modifier = Modifier, label: String, value: String) {
+fun LabelText(modifier: Modifier = Modifier, label: String, value: String) {
     Row(modifier = modifier) {
         Text(
             modifier = Modifier.width(80.dp),
@@ -96,12 +105,13 @@ private fun LabelText(modifier: Modifier = Modifier, label: String, value: Strin
     }
 }
 
-private val defaultWorkout = Workout(
+@Composable
+fun defaultWorkout() = Workout(
     "uid",
     "Workout 1",
     "",
-    1648926866000,
+    1648926866000L,
     12,
     15 * 60 * 1000 + 12 * 1000,
-    Bitmap.createBitmap(1, 1, Bitmap.Config.RGB_565)
+    ImageBitmap.imageResource(id = R.drawable.preview_frame).asAndroidBitmap()
 )

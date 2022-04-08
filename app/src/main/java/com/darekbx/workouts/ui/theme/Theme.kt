@@ -9,7 +9,6 @@ private val ColorPalette = darkColors(
     primary = Teal500,
     primaryVariant = Teal200,
     secondary = Purple500,
-    surface = Color.Red,
     onPrimary = Color.White,
     onSurface = Color.White
 )

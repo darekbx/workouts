@@ -428,7 +428,7 @@ private fun getVideoFrame(context: Context, uri: Uri, time: Long): Bitmap? {
     val retriever = MediaMetadataRetriever()
     try {
         retriever.setDataSource(context, uri)
-        bitmap = retriever.getFrameAtTime(time)
+        bitmap = retriever.getFrameAtTime(time * 1000) // In microseconds
     } catch (ex: RuntimeException) {
         ex.printStackTrace()
     } finally {
