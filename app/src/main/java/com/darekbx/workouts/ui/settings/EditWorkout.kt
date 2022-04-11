@@ -1,7 +1,6 @@
 package com.darekbx.workouts.ui.settings
 
 import android.content.Context
-import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -35,7 +34,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import kotlinx.coroutines.launch
+import java.io.File
 import java.lang.RuntimeException
 
 @Preview
@@ -46,7 +47,6 @@ fun EditWorkout(
     onCompleted: () -> Unit = { }
 ) {
     val markers = remember { mutableStateListOf<Long>() }
-    var movieUri by remember { mutableStateOf(null as Uri?) }
     val name = remember { mutableStateOf("") }
     var previewFrame by remember { mutableStateOf(null as Bitmap?) }
     val movieLength = remember { mutableStateOf(0L) }
@@ -57,7 +57,7 @@ fun EditWorkout(
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
-    ) { movieUri = it }
+    ) { uri -> uri?.let { workoutsViewModel.copyFile(uri) } }
 
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.padding(all = 8.dp)) {
@@ -66,12 +66,12 @@ fun EditWorkout(
                 Modifier
                     .padding(top = 8.dp)
                     .fillMaxWidth(),
-                movieUri
+                workoutsViewModel.movieFile.value
             ) { launcher.launch("*/*") }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            movieUri?.let {
+            workoutsViewModel.movieFile.value?.let {
                 SelectPreviewFrameButton(
                     Modifier.fillMaxWidth(),
                     selectFrameDialogState,
@@ -93,7 +93,7 @@ fun EditWorkout(
                     progressVisible = false
                     workoutsViewModel.add(
                         name.value,
-                        movieUri?.toString()!!,
+                        workoutsViewModel.movieFile.value!!,
                         movieLength.value,
                         previewFrame!!,
                         markers
@@ -116,9 +116,9 @@ fun EditWorkout(
     }
 
     if (selectFrameDialogState.value) {
-        movieUri?.let {
+        workoutsViewModel.movieFile.value?.let {
             SelectPreviewFrame(
-                movieUri = it,
+                movieFile = it,
                 frameCallback = { frame ->
                     previewFrame = frame
                     selectFrameDialogState.value = false
@@ -129,9 +129,9 @@ fun EditWorkout(
     }
 
     if (setMarkersDialogState.value) {
-        movieUri?.let {
+        workoutsViewModel.movieFile.value?.let {
             SetMarkers(
-                movieUri = it,
+                movieFile = it,
                 markersCallback = { markersList ->
                     markers.clear()
                     markers.addAll(markersList)
@@ -201,14 +201,14 @@ private fun WorkoutName(modifier: Modifier = Modifier, name: MutableState<String
 
 @Composable
 private fun SelectPreviewFrame(
-    movieUri: Uri,
+    movieFile: String,
     frameCallback: (Bitmap) -> Unit,
     movieLength: (Long) -> Unit
 ) {
     val context = LocalContext.current
     val player = SimpleExoPlayer.Builder(context).build()
     val playerView = PlayerView(context)
-    val mediaItem = MediaItem.fromUri(movieUri)
+    val mediaItem = MediaItem.fromUri(File(context.filesDir, movieFile).toUri())
     val playWhenReady by rememberSaveable { mutableStateOf(true) }
     player.setMediaItem(mediaItem)
     playerView.player = player
@@ -248,7 +248,7 @@ private fun SelectPreviewFrame(
                     playerView.player?.pause()
                     playerView.hideController()
 
-                    getVideoFrame(context, movieUri, player.currentPosition)?.let {
+                    getVideoFrame(context, movieFile, player.currentPosition)?.let {
                         videoFrame = it
                     }
                 }
@@ -270,13 +270,13 @@ private fun SelectPreviewFrame(
 
 @Composable
 private fun SetMarkers(
-    movieUri: Uri,
+    movieFile: String,
     markersCallback: (List<Long>) -> Unit
 ) {
     val context = LocalContext.current
     val player = SimpleExoPlayer.Builder(context).build()
     val playerView = PlayerView(context)
-    val mediaItem = MediaItem.fromUri(movieUri)
+    val mediaItem = MediaItem.fromUri(File(context.filesDir, movieFile).toUri())
     val playWhenReady by rememberSaveable { mutableStateOf(true) }
     player.setMediaItem(mediaItem)
     playerView.player = player
@@ -316,7 +316,9 @@ private fun SetMarkers(
         )
         Row(
             horizontalArrangement = Arrangement.SpaceAround,
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp)
         ) {
             AddMarkerButton(
                 Modifier
@@ -371,7 +373,7 @@ private fun Markers(
 @Composable
 private fun MovieSelectButton(
     modifier: Modifier = Modifier,
-    movieUri: Uri?,
+    movieFile: String?,
     onClick: () -> Unit = { }
 ) {
     Button(
@@ -398,10 +400,10 @@ private fun MovieSelectButton(
                 Spacer(Modifier.size(ButtonDefaults.IconSpacing))
                 Text(stringResource(id = R.string.select_movie))
             }
-            if (movieUri != null) {
+            if (movieFile != null) {
                 Text(
                     modifier = Modifier.padding(top = 4.dp),
-                    text = movieUri.toString(),
+                    text = movieFile.toString(),
                     fontSize = 11.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -423,11 +425,11 @@ private fun AddMarkerButton(
     ) { Text(text = "Add marker") }
 }
 
-private fun getVideoFrame(context: Context, uri: Uri, time: Long): Bitmap? {
+private fun getVideoFrame(context: Context, movieFile: String, time: Long): Bitmap? {
     var bitmap: Bitmap? = null
     val retriever = MediaMetadataRetriever()
     try {
-        retriever.setDataSource(context, uri)
+        retriever.setDataSource(File(context.filesDir, movieFile).absolutePath)
         bitmap = retriever.getFrameAtTime(time * 1000) // In microseconds
     } catch (ex: RuntimeException) {
         ex.printStackTrace()

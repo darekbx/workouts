@@ -1,10 +1,11 @@
 package com.darekbx.workouts.viewmodels
 
+import android.content.Context
+import android.content.Context.MODE_PRIVATE
 import android.graphics.Bitmap
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.Transformations
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import android.net.Uri
+import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.*
 import com.darekbx.workouts.data.WorkoutsDao
 import com.darekbx.workouts.data.dto.MarkerDto
 import com.darekbx.workouts.data.dto.WorkoutDto
@@ -13,17 +14,37 @@ import com.darekbx.workouts.model.Workout.Companion.toDomain
 import com.darekbx.workouts.utils.FastForwardIncrease
 import com.darekbx.workouts.utils.PlaybackSpeed
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
+import java.math.BigInteger
+import java.security.MessageDigest
 import java.util.*
 import javax.inject.Inject
 
 @HiltViewModel
 class WorkoutsViewModel @Inject constructor(
-    private val workoutsDao: WorkoutsDao
+    private val workoutsDao: WorkoutsDao,
+    @ApplicationContext private val context: Context,
 ): ViewModel() {
+
+    var movieFile = mutableStateOf<String?>(null)
+
+    fun copyFile(uri: Uri) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                val fileName = computeMd5(uri.toString())
+                context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                    context.openFileOutput(fileName, MODE_PRIVATE)?.use { outputStream ->
+                        inputStream.copyTo(outputStream)
+                        movieFile.value = fileName
+                    }
+                }
+            }
+        }
+    }
 
     fun persistPlaybackSettings(
         playbackSpeed: PlaybackSpeed,
@@ -57,7 +78,7 @@ class WorkoutsViewModel @Inject constructor(
                 val workoutUid = UUID.randomUUID().toString()
                 val workout = WorkoutDto(
                     workoutUid,
-                    name!!,
+                    name,
                     uri,
                     lastPlayed = 0,
                     timesPlayed = 0,
@@ -94,6 +115,11 @@ class WorkoutsViewModel @Inject constructor(
             compress(Bitmap.CompressFormat.PNG, 90, stream)
             return stream.toByteArray()
         }
+    }
+
+    private fun computeMd5(input:String): String {
+        val md = MessageDigest.getInstance("MD5")
+        return BigInteger(1, md.digest(input.toByteArray())).toString(16).padStart(32, '0')
     }
 
     companion object {
