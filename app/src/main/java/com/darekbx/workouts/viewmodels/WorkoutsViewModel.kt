@@ -1,7 +1,6 @@
 package com.darekbx.workouts.viewmodels
 
 import android.graphics.Bitmap
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Transformations
 import androidx.lifecycle.ViewModel
@@ -26,8 +25,20 @@ class WorkoutsViewModel @Inject constructor(
     private val workoutsDao: WorkoutsDao
 ): ViewModel() {
 
-    var playbackSpeed = mutableStateOf(PlaybackSpeed.SPEED_1_0)
-    var fastForwardIncrease = mutableStateOf(FastForwardIncrease.FF_10)
+    fun persistPlaybackSettings(
+        playbackSpeed: PlaybackSpeed,
+        fastForwardIncrease: FastForwardIncrease
+    ) {
+        playbackSpeedState = playbackSpeed
+        fastForwardIncreaseState = fastForwardIncrease
+    }
+
+    fun workout(uid: String) =
+        Transformations.map(workoutsDao.workout(uid)) { it.toDomain() }
+
+    fun loadPlaybackSettings() : Pair<PlaybackSpeed, FastForwardIncrease> {
+        return Pair(playbackSpeedState, fastForwardIncreaseState)
+    }
 
     fun workouts(): LiveData<List<Workout>> = Transformations.map(workoutsDao.workouts()) { dtos ->
         dtos.map { it.toDomain() }
@@ -83,5 +94,10 @@ class WorkoutsViewModel @Inject constructor(
             compress(Bitmap.CompressFormat.PNG, 90, stream)
             return stream.toByteArray()
         }
+    }
+
+    companion object {
+        private var playbackSpeedState: PlaybackSpeed = PlaybackSpeed.SPEED_1_0
+        private var fastForwardIncreaseState: FastForwardIncrease = FastForwardIncrease.FF_10
     }
 }

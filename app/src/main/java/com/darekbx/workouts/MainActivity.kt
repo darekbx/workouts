@@ -82,12 +82,12 @@ class MainActivity : ComponentActivity() {
             composable(NavigationItem.Home.route) {
                 val workouts = workoutsViewModel.workouts().observeAsState(listOf())
                 WorkoutsScreen(workouts) {
-                    val args = mapOf("uuid" to it.uid)
+                    val args = mapOf("uid" to it.uid)
                     navController.navigate(NavigationItem.Workout.apply { arguments = args }.route)
                 }
             }
             composable(NavigationItem.Workout.route) {
-                WorkoutScreen(NavigationItem.Workout.arguments["uuid"] as String)
+                WorkoutScreen(NavigationItem.Workout.arguments["uid"] as String)
             }
             composable(NavigationItem.Settings.route) {
                 SettingsScreen()

@@ -10,6 +10,9 @@ import com.darekbx.workouts.data.dto.WorkoutDto
 @Dao
 interface WorkoutsDao {
 
+    @Query("SELECT * FROM workout WHERE uid = :uid LIMIT 1")
+    fun workout(uid: String): LiveData<WorkoutDto>
+
     @Query("SELECT * FROM workout")
     fun workouts(): LiveData<List<WorkoutDto>>
 

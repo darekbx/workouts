@@ -24,8 +24,9 @@ import com.darekbx.workouts.viewmodels.WorkoutsViewModel
 fun PlaybackSettings(
     workoutsViewModel: WorkoutsViewModel = hiltViewModel(),
 ) {
-    var playSpeed by remember { workoutsViewModel.playbackSpeed }
-    var fastForward by remember { workoutsViewModel.fastForwardIncrease }
+    var (playSpeedState, fastForwardState) = workoutsViewModel.loadPlaybackSettings()
+    var playSpeed by remember { mutableStateOf(playSpeedState) }
+    var fastForward by remember { mutableStateOf(fastForwardState) }
 
     Column {
         Text(
@@ -33,8 +34,14 @@ fun PlaybackSettings(
             text = "Playback Settings",
             style = Typography.body1,
         )
-        PlaySpeed(value = playSpeed) { playSpeed = it }
-        FastForwardInterval(value = fastForward) { fastForward = it }
+        PlaySpeed(value = playSpeed) {
+            playSpeed = it
+            workoutsViewModel.persistPlaybackSettings(it, fastForward)
+        }
+        FastForwardInterval(value = fastForward) {
+            fastForward = it
+            workoutsViewModel.persistPlaybackSettings(playSpeed, it)
+        }
     }
 }
 
