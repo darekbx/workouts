@@ -23,6 +23,7 @@ import com.google.android.exoplayer2.ui.PlayerView
 import android.media.MediaMetadataRetriever
 
 import android.graphics.Bitmap
+import android.widget.TextView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -35,6 +36,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
+import com.darekbx.workouts.utils.toSeconds
 import kotlinx.coroutines.launch
 import java.io.File
 import java.lang.RuntimeException
@@ -325,7 +327,7 @@ private fun SetMarkers(
                     .fillMaxWidth()
                     .weight(0.5f),
                 onAddMarker = { markers.add(it) },
-                player
+                playerView
             )
             Spacer(modifier = Modifier.width(4.dp))
             Button(
@@ -417,11 +419,13 @@ private fun MovieSelectButton(
 private fun AddMarkerButton(
     modifier: Modifier = Modifier,
     onAddMarker: (Long) -> Unit,
-    player: SimpleExoPlayer
+    playerView: PlayerView
 ) {
+    val positionView = playerView.findViewById<TextView>(R.id.exo_position)
+
     Button(
         modifier = modifier,
-        onClick = { onAddMarker(player.currentPosition) }
+        onClick = { onAddMarker(positionView.text.toString().toSeconds()) }
     ) { Text(text = "Add marker") }
 }
 
