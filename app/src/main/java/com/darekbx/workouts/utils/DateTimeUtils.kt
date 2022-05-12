@@ -2,6 +2,16 @@ package com.darekbx.workouts.utils
 
 import java.sql.Date
 import java.text.SimpleDateFormat
+import java.util.concurrent.TimeUnit
+
+fun Long.toFormattedTime(): String {
+    val minute = TimeUnit.MILLISECONDS.toMinutes(this)
+    val second = TimeUnit.MILLISECONDS.toSeconds(this)
+    return when {
+        minute > 0 -> "${minute}m ${second - minute * 60}s"
+        else -> "${second}s"
+    }
+}
 
 fun Long.toFormattedDateTime(): String {
     return SimpleDateFormat("yyyy-MM-dd").format(Date(this))

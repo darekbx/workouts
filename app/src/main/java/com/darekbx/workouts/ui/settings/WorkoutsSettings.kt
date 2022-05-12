@@ -35,7 +35,8 @@ fun WorkoutsSettings(
     ConstraintLayout {
         val (button) = createRefs()
         ListWorkounts(
-            Modifier.fillMaxSize(),
+            Modifier.fillMaxSize()
+                .padding(8.dp),
             workouts = workouts.value,
             onDelete = { workoutsViewModel.delete(it) }
         )

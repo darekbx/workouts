@@ -36,10 +36,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
+import com.darekbx.workouts.utils.toFormattedTime
 import com.darekbx.workouts.utils.toSeconds
 import kotlinx.coroutines.launch
 import java.io.File
 import java.lang.RuntimeException
+import java.util.concurrent.TimeUnit
 
 @Preview
 @Composable
@@ -210,7 +212,7 @@ private fun SelectPreviewFrame(
     val context = LocalContext.current
     val player = SimpleExoPlayer.Builder(context).build()
     val playerView = PlayerView(context)
-    val mediaItem = MediaItem.fromUri(File(context.filesDir, movieFile).toUri())
+    val mediaItem = MediaItem.fromUri(computeMovieUrl(context, movieFile))
     val playWhenReady by rememberSaveable { mutableStateOf(true) }
     player.setMediaItem(mediaItem)
     playerView.player = player
@@ -278,7 +280,7 @@ private fun SetMarkers(
     val context = LocalContext.current
     val player = SimpleExoPlayer.Builder(context).build()
     val playerView = PlayerView(context)
-    val mediaItem = MediaItem.fromUri(File(context.filesDir, movieFile).toUri())
+    val mediaItem = MediaItem.fromUri(computeMovieUrl(context, movieFile))
     val playWhenReady by rememberSaveable { mutableStateOf(true) }
     player.setMediaItem(mediaItem)
     playerView.player = player
@@ -342,6 +344,12 @@ private fun SetMarkers(
 }
 
 @Composable
+private fun computeMovieUrl(
+    context: Context,
+    movieFile: String
+) = File(context.filesDir, movieFile).toUri()
+
+@Composable
 private fun Markers(
     modifier: Modifier = Modifier,
     markers: SnapshotStateList<Long>
@@ -359,6 +367,7 @@ private fun Markers(
     ) {
         itemsIndexed(markers) { index, time ->
             val color = if (index % 2 == 0) Color.White.copy(alpha = 0.075f) else Color.Transparent
+            val timeString = time.toFormattedTime()
             Text(
                 modifier = Modifier
                     .padding(top = 8.dp)
@@ -366,7 +375,7 @@ private fun Markers(
                     .clip(RoundedCornerShape(4.dp))
                     .background(color)
                     .padding(4.dp),
-                text = "#${index + 1}: ${time / 1000}s"
+                text = "#${index + 1}: $timeString"
             )
         }
     }

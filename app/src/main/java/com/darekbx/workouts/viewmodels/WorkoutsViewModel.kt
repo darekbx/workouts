@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Context.MODE_PRIVATE
 import android.graphics.Bitmap
 import android.net.Uri
+import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.*
 import com.darekbx.workouts.data.WorkoutsDao
@@ -13,9 +14,13 @@ import com.darekbx.workouts.model.Workout
 import com.darekbx.workouts.model.Workout.Companion.toDomain
 import com.darekbx.workouts.utils.FastForwardIncrease
 import com.darekbx.workouts.utils.PlaybackSpeed
+import com.google.android.exoplayer2.ExoPlayer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
@@ -56,6 +61,16 @@ class WorkoutsViewModel @Inject constructor(
 
     fun workout(uid: String) =
         Transformations.map(workoutsDao.workout(uid)) { it.toDomain() }
+
+    fun markAsPlayed(uid: String) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+
+                // TODO: increase times played counterq
+
+            }
+        }
+    }
 
     fun loadPlaybackSettings() : Pair<PlaybackSpeed, FastForwardIncrease> {
         return Pair(playbackSpeedState, fastForwardIncreaseState)
