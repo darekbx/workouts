@@ -1,8 +1,6 @@
 package com.darekbx.workouts.ui.workout
 
 import android.content.Context
-import android.media.TimedText
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -18,13 +16,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.darekbx.workouts.R
+import com.darekbx.workouts.model.Marker
 import com.darekbx.workouts.model.Workout
 import com.darekbx.workouts.utils.FastForwardIncrease
 import com.darekbx.workouts.utils.PlaybackSpeed
@@ -43,6 +41,7 @@ fun WorkoutScreen(
     workoutsViewModel: WorkoutsViewModel = hiltViewModel()
 ) {
     val workout = workoutsViewModel.workout(uid).observeAsState()
+    val markers = workoutsViewModel.workoutMarkers(uid).observeAsState()
     val (playSpeedState, fastForwardState) = workoutsViewModel.loadPlaybackSettings()
 
     LaunchedEffect(uid) {
@@ -50,7 +49,7 @@ fun WorkoutScreen(
     }
 
     if (workout.value != null) {
-        MainLayout(workout.value!!, playSpeedState, fastForwardState)
+        MainLayout(workout.value!!, markers.value!!, playSpeedState, fastForwardState)
     } else {
         CommonProgress()
     }
@@ -59,51 +58,89 @@ fun WorkoutScreen(
 @Composable
 private fun MainLayout(
     workout: Workout,
+    markers: List<Marker>,
     playSpeedState: PlaybackSpeed,
     fastForwardState: FastForwardIncrease
 ) {
     DisplayVideo(
         modifier = Modifier.fillMaxHeight(),
-        movieFile = workout.moviePath
+        movieFile = workout.moviePath,
+        markers,
+        playSpeedState,
+        fastForwardState
     )
 }
 
 @Composable
-private fun DisplayVideo(modifier: Modifier = Modifier, movieFile: String) {
+private fun DisplayVideo(
+    modifier: Modifier = Modifier,
+    movieFile: String,
+    markers: List<Marker>,
+    playSpeedState: PlaybackSpeed,
+    fastForwardState: FastForwardIncrease
+) {
+    var markerIndex by remember { mutableStateOf(0) }
+    val playWhenReadyState by rememberSaveable { mutableStateOf(true) }
+
     val context = LocalContext.current
-    val player = SimpleExoPlayer.Builder(context).build()
-    val playerView = PlayerView(context)
-    val mediaItem = MediaItem.fromUri(computeMovieUrl(context, movieFile))
-    val playWhenReady by rememberSaveable { mutableStateOf(true) }
-    player.setMediaItem(mediaItem)
-
-    playerView.player = player
-    playerView.hideController()
-    playerView.controllerAutoShow = false
-
-    LaunchedEffect(player) {
-        player.prepare()
-        player.playWhenReady = playWhenReady
+    val exoPlayer = remember(context) {
+        SimpleExoPlayer.Builder(context).build().apply {
+            setPlaybackSpeed(playSpeedState.speed)
+            prepare()
+        }
     }
 
     Column(modifier) {
         AndroidView(
-            modifier = Modifier.fillMaxWidth(),
-            factory = { playerView })
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(0.dp, 400.dp),
+            factory = {
+                PlayerView(context).apply {
+                    val mediaItem = MediaItem.fromUri(computeMovieUrl(context, movieFile))
+                    exoPlayer.setMediaItem(mediaItem)
+                    exoPlayer.playWhenReady = playWhenReadyState
+
+                    player = exoPlayer
+                    hideController()
+                    controllerAutoShow = false
+                }
+
+            })
         TimeText(
             modifier = Modifier
                 .align(Alignment.End)
-                .padding(8.dp),
-            player = player
+                .padding(top = 8.dp, end = 8.dp),
+            player = exoPlayer
+        )
+        PlaybackSettings(
+            modifier = Modifier
+                .align(Alignment.End)
+                .padding(end = 8.dp),
+            playSpeedState,
+            fastForwardState
         )
         DisplayControls(
             Modifier
                 .weight(1F)
                 .padding(32.dp)
                 .fillMaxWidth(),
-            onPlayingChanged = { state ->
-                if (state) player.playWhenReady = false
-                else player.playWhenReady = true
+            onPlayingChanged = { state: Boolean ->
+                exoPlayer.playWhenReady = !state
+            },
+            onNextClick = {
+                val marker = markers[markerIndex]
+                if (markerIndex < markers.size - 1) {
+                    markerIndex++
+                }
+                exoPlayer.seekTo(marker.time)
+            },
+            onPreviousClick = {
+                val marker = markers[markerIndex]
+                if (markerIndex > 0) {
+                    markerIndex--
+                }
+                exoPlayer.seekTo(marker.time)
             })
     }
 }
@@ -130,6 +167,40 @@ private fun TimeText(modifier: Modifier, player: Player) {
             text = "left",
             fontSize = 16.sp
         )
+    }
+}
+
+@Composable
+private fun PlaybackSettings(
+    modifier: Modifier,
+    playSpeedState: PlaybackSpeed,
+    fastForwardState: FastForwardIncrease
+) {
+    Column(modifier = modifier) {
+        Row(modifier = Modifier.align(Alignment.End)) {
+            Text(
+                text = playSpeedState.label,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp
+            )
+            Text(
+                modifier = Modifier.padding(start = 4.dp),
+                text = "speed",
+                fontSize = 16.sp
+            )
+        }
+        Row(modifier = Modifier.align(Alignment.End)) {
+            Text(
+                text = fastForwardState.label,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp
+            )
+            Text(
+                modifier = Modifier.padding(start = 4.dp),
+                text = "FF",
+                fontSize = 16.sp
+            )
+        }
     }
 }
 
@@ -196,7 +267,6 @@ private fun CommonProgress() {
     ) { CircularProgressIndicator() }
 }
 
-@Composable
 private fun computeMovieUrl(
     context: Context,
     movieFile: String

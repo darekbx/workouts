@@ -4,23 +4,20 @@ import android.content.Context
 import android.content.Context.MODE_PRIVATE
 import android.graphics.Bitmap
 import android.net.Uri
-import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.*
 import com.darekbx.workouts.data.WorkoutsDao
 import com.darekbx.workouts.data.dto.MarkerDto
 import com.darekbx.workouts.data.dto.WorkoutDto
+import com.darekbx.workouts.model.Marker
+import com.darekbx.workouts.model.Marker.Companion.toDomain
 import com.darekbx.workouts.model.Workout
 import com.darekbx.workouts.model.Workout.Companion.toDomain
 import com.darekbx.workouts.utils.FastForwardIncrease
 import com.darekbx.workouts.utils.PlaybackSpeed
-import com.google.android.exoplayer2.ExoPlayer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.conflate
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
@@ -65,20 +62,23 @@ class WorkoutsViewModel @Inject constructor(
     fun markAsPlayed(uid: String) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-
-                // TODO: increase times played counterq
-
+                workoutsDao.markWorkoutAsPlayed(uid)
             }
         }
     }
 
-    fun loadPlaybackSettings() : Pair<PlaybackSpeed, FastForwardIncrease> {
+    fun loadPlaybackSettings(): Pair<PlaybackSpeed, FastForwardIncrease> {
         return Pair(playbackSpeedState, fastForwardIncreaseState)
     }
 
     fun workouts(): LiveData<List<Workout>> = Transformations.map(workoutsDao.workouts()) { dtos ->
         dtos.map { it.toDomain() }
     }
+
+    fun workoutMarkers(uid: String): LiveData<List<Marker>> =
+        Transformations.map(workoutsDao.workoutMarkers(uid)) { dtos ->
+            dtos.map { it.toDomain() }
+        }
 
     fun add(
         name: String,
@@ -102,12 +102,14 @@ class WorkoutsViewModel @Inject constructor(
                 )
                 workoutsDao.addWorkout(workout)
                 markers.forEach { time ->
-                    workoutsDao.addMarker(MarkerDto(
-                        UUID.randomUUID().toString(),
-                        workoutUid,
-                        time,
-                        0
-                    ))
+                    workoutsDao.addMarker(
+                        MarkerDto(
+                            UUID.randomUUID().toString(),
+                            workoutUid,
+                            time,
+                            0
+                        )
+                    )
                 }
                 withContext(Dispatchers.Main) {
                     onCompleted()
@@ -132,7 +134,7 @@ class WorkoutsViewModel @Inject constructor(
         }
     }
 
-    private fun computeMd5(input:String): String {
+    private fun computeMd5(input: String): String {
         val md = MessageDigest.getInstance("MD5")
         return BigInteger(1, md.digest(input.toByteArray())).toString(16).padStart(32, '0')
     }

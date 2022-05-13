@@ -23,6 +23,8 @@ import com.google.android.exoplayer2.ui.PlayerView
 import android.media.MediaMetadataRetriever
 
 import android.graphics.Bitmap
+import android.util.Log
+import android.view.View
 import android.widget.TextView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.lazy.*
@@ -285,6 +287,9 @@ private fun SetMarkers(
     player.setMediaItem(mediaItem)
     playerView.player = player
 
+    playerView.controllerShowTimeoutMs = 0
+    playerView.controllerHideOnTouch = false
+
     val markers = remember { mutableStateListOf<Long>() }
 
     LaunchedEffect(player) {
@@ -430,11 +435,10 @@ private fun AddMarkerButton(
     onAddMarker: (Long) -> Unit,
     playerView: PlayerView
 ) {
-    val positionView = playerView.findViewById<TextView>(R.id.exo_position)
-
+    val positionView = remember {playerView.findViewById<TextView>(R.id.exo_position)}
     Button(
         modifier = modifier,
-        onClick = { onAddMarker(positionView.text.toString().toSeconds()) }
+        onClick = { onAddMarker(positionView.text.toString().toSeconds() * 1000L) }
     ) { Text(text = "Add marker") }
 }
 

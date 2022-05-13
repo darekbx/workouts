@@ -84,7 +84,9 @@ fun FastForwardInterval(
             for (item in FastForwardIncrease.values()) {
                 ActionButton(
                     text = item.label,
-                    checked = value == item
+                    checked = value == item,
+                    // TODO: disabled functionality, since there are problems with forward/backward action executed from code
+                    enabled = false
                 ) { onChanged(item) }
             }
         }
@@ -96,6 +98,7 @@ fun ActionButton(
     modifier: Modifier = Modifier,
     text: String,
     checked: Boolean,
+    enabled: Boolean = true,
     onClick: () -> Unit
 ) {
     Button(
@@ -103,6 +106,7 @@ fun ActionButton(
             .padding(end = 4.dp)
             .alpha(if (checked) 1.0F else 0.4F),
         onClick = { onClick() },
+        enabled = enabled
     ) {
         Text(text = text)
     }

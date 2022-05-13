@@ -14,7 +14,7 @@ fun Long.toFormattedTime(): String {
 }
 
 fun Long.toFormattedDateTime(): String {
-    return SimpleDateFormat("yyyy-MM-dd").format(Date(this))
+    return SimpleDateFormat("yyyy-MM-dd").format(Date(this * 1000L))
 }
 
 fun String.toSeconds(): Long {

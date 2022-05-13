@@ -10,6 +10,16 @@ import com.darekbx.workouts.data.dto.WorkoutDto
 @Dao
 interface WorkoutsDao {
 
+    @Query("""
+        UPDATE 
+            workout 
+        SET 
+            times_played = times_played + 1, 
+            last_played = strftime('%s','now') 
+        WHERE 
+            uid = :uid""")
+    fun markWorkoutAsPlayed(uid: String)
+
     @Query("SELECT * FROM workout WHERE uid = :uid LIMIT 1")
     fun workout(uid: String): LiveData<WorkoutDto>
 
@@ -25,8 +35,8 @@ interface WorkoutsDao {
     @Query("DELETE FROM marker WHERE workout_uid = :uid")
     fun deleteWorkoutMarkers(uid: String)
 
-    @Query("SELECT * FROM marker")
-    fun markers(): LiveData<List<MarkerDto>>
+    @Query("SELECT * FROM marker where workout_uid = :uid")
+    fun workoutMarkers(uid: String): LiveData<List<MarkerDto>>
 
     @Insert
     fun addMarker(markerDto: MarkerDto): Long
