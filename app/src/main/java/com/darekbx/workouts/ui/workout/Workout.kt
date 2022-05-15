@@ -91,7 +91,7 @@ private fun DisplayVideo(
     }
 
     Column(modifier) {
-        AndroidView(
+        DisposableEffect(AndroidView(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(0.dp, 400.dp),
@@ -105,8 +105,9 @@ private fun DisplayVideo(
                     hideController()
                     controllerAutoShow = false
                 }
-
-            })
+            })) {
+            onDispose { exoPlayer.release() }
+        }
         TimeText(
             modifier = Modifier
                 .align(Alignment.End)

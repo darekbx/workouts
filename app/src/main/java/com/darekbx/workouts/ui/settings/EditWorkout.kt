@@ -24,7 +24,6 @@ import android.media.MediaMetadataRetriever
 
 import android.graphics.Bitmap
 import android.util.Log
-import android.view.View
 import android.widget.TextView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.lazy.*
@@ -43,7 +42,6 @@ import com.darekbx.workouts.utils.toSeconds
 import kotlinx.coroutines.launch
 import java.io.File
 import java.lang.RuntimeException
-import java.util.concurrent.TimeUnit
 
 @Preview
 @Composable
@@ -212,16 +210,13 @@ private fun SelectPreviewFrame(
     movieLength: (Long) -> Unit
 ) {
     val context = LocalContext.current
-    val player = SimpleExoPlayer.Builder(context).build()
     val playerView = PlayerView(context)
-    val mediaItem = MediaItem.fromUri(computeMovieUrl(context, movieFile))
     val playWhenReady by rememberSaveable { mutableStateOf(true) }
-    player.setMediaItem(mediaItem)
-    playerView.player = player
 
-    LaunchedEffect(player) {
-        player.prepare()
-        player.playWhenReady = playWhenReady
+    val exoPlayer = remember(context) {
+        SimpleExoPlayer.Builder(context).build().apply {
+            prepare()
+        }
     }
 
     var videoFrame by remember { mutableStateOf(null as Bitmap?) }
@@ -232,15 +227,24 @@ private fun SelectPreviewFrame(
             .background(Color.Black)
             .padding(8.dp)
     ) {
-        AndroidView(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(180.dp)
-                .weight(1F)
-                .padding(16.dp),
-            factory = {
-                playerView
-            })
+        DisposableEffect(
+            AndroidView(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .weight(1F)
+                    .padding(16.dp),
+                factory = {
+                    PlayerView(context).apply {
+                        val mediaItem = MediaItem.fromUri(computeMovieUrl(context, movieFile))
+                        exoPlayer.setMediaItem(mediaItem)
+                        player = exoPlayer
+                        exoPlayer.playWhenReady = playWhenReady
+                    }
+                })
+        ) {
+            onDispose { exoPlayer.release() }
+        }
 
         Row(
             horizontalArrangement = Arrangement.SpaceAround,
@@ -254,7 +258,7 @@ private fun SelectPreviewFrame(
                     playerView.player?.pause()
                     playerView.hideController()
 
-                    getVideoFrame(context, movieFile, player.currentPosition)?.let {
+                    getVideoFrame(context, movieFile, exoPlayer.currentPosition)?.let {
                         videoFrame = it
                     }
                 }
@@ -280,29 +284,37 @@ private fun SetMarkers(
     markersCallback: (List<Long>) -> Unit
 ) {
     val context = LocalContext.current
-    val player = SimpleExoPlayer.Builder(context).build()
-    val playerView = PlayerView(context)
-    val mediaItem = MediaItem.fromUri(computeMovieUrl(context, movieFile))
     val playWhenReady by rememberSaveable { mutableStateOf(true) }
-    player.setMediaItem(mediaItem)
-    playerView.player = player
-
-    playerView.controllerShowTimeoutMs = 0
-    playerView.controllerHideOnTouch = false
 
     val markers = remember { mutableStateListOf<Long>() }
 
-    LaunchedEffect(player) {
-        player.prepare()
-        player.playWhenReady = playWhenReady
+    val exoPlayer = remember(context) {
+        SimpleExoPlayer.Builder(context).build().apply {
+            prepare()
+        }
     }
 
-    Column(
+    DisposableEffect(Column(
         Modifier
             .fillMaxWidth()
             .background(Color.Black)
             .padding(8.dp)
     ) {
+
+        val playerView =
+            remember {
+                PlayerView(context).apply {
+                    val mediaItem = MediaItem.fromUri(computeMovieUrl(context, movieFile))
+                    exoPlayer.setMediaItem(mediaItem)
+                    player = exoPlayer
+
+                    controllerShowTimeoutMs = -1
+                    controllerHideOnTouch = false
+
+                    exoPlayer.playWhenReady = playWhenReady
+                }
+            }
+
         AndroidView(
             modifier = Modifier
                 .fillMaxWidth()
@@ -345,10 +357,11 @@ private fun SetMarkers(
                 enabled = markers.isNotEmpty()
             ) { Text("Confirm") }
         }
+    }) {
+        onDispose { exoPlayer.release() }
     }
 }
 
-@Composable
 private fun computeMovieUrl(
     context: Context,
     movieFile: String
@@ -435,7 +448,7 @@ private fun AddMarkerButton(
     onAddMarker: (Long) -> Unit,
     playerView: PlayerView
 ) {
-    val positionView = remember {playerView.findViewById<TextView>(R.id.exo_position)}
+    val positionView = remember { playerView.findViewById<TextView>(R.id.exo_position) }
     Button(
         modifier = modifier,
         onClick = { onAddMarker(positionView.text.toString().toSeconds() * 1000L) }
