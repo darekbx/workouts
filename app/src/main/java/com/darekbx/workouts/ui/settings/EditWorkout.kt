@@ -269,7 +269,7 @@ private fun SelectPreviewFrame(
                     .fillMaxWidth()
                     .weight(0.5f),
                 onClick = {
-                    movieLength(playerView.player?.duration ?: 0L)
+                    movieLength(exoPlayer.duration)
                     frameCallback(videoFrame!!)
                 },
                 enabled = videoFrame != null
