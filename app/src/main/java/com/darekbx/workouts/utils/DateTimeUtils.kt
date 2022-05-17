@@ -17,6 +17,13 @@ fun Long.toFormattedDateTime(): String {
     return SimpleDateFormat("yyyy-MM-dd").format(Date(this * 1000L))
 }
 
+fun Long.toDaysAgo(): Long {
+    val now = System.currentTimeMillis()
+    val diff = now - this * 1000L
+    return TimeUnit.MILLISECONDS.toDays(diff)
+}
+
+
 fun String.toSeconds(): Long {
     val chunks = split(":").map { it.toInt() }
     return when (chunks.size) {

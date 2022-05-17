@@ -1,6 +1,6 @@
 package com.darekbx.workouts.ui.workouts
 
-import android.util.Log
+import android.graphics.Color as GC
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -23,7 +23,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.darekbx.workouts.R
 import com.darekbx.workouts.model.Workout
-import com.darekbx.workouts.utils.toFormattedDateTime
+import com.darekbx.workouts.utils.toDaysAgo
 import java.util.concurrent.TimeUnit
 
 @Composable
@@ -65,10 +65,23 @@ fun WorkoutItem(
     workout: Workout = defaultWorkout()
 ) {
     val lengthMinutes = TimeUnit.MILLISECONDS.toMinutes(workout.length)
-    val lastPlayed = workout.lastPlayed
+    val lastPlayedAgo = workout.lastPlayed
         .takeIf { it > 0 }
-        ?.toFormattedDateTime()
-        ?: "N/A"
+        ?.toDaysAgo()
+        ?: 0L
+    val daysSuffix = when (lastPlayedAgo) {
+        1L -> "day ago"
+        else -> "days ago"
+    }
+    val daysAgoColor = Color(when (lastPlayedAgo) {
+        in 0L..2L -> GC.WHITE
+        3L -> GC.parseColor("#ffee58")
+        4L -> GC.parseColor("#fdd835")
+        5L, 6L -> GC.parseColor("#f57f17")
+        7L -> GC.parseColor("#f4511e")
+        else -> GC.parseColor("#bf360c")
+    })
+
     Row(modifier) {
         Image(
             modifier = Modifier
@@ -80,18 +93,23 @@ fun WorkoutItem(
         )
         Column(modifier = Modifier.padding(4.dp)) {
             Text(
-                text = "${workout.name}",
+                text = workout.name,
                 style = MaterialTheme.typography.h5
             )
-            LabelText(label = "Length: ", value = "${lengthMinutes} minutes")
-            LabelText(label = "Last played: ", value = lastPlayed)
+            LabelText(label = "Length: ", value = "$lengthMinutes minutes")
+            LabelText(label = "Last played: ", value = "$lastPlayedAgo $daysSuffix", valueColor = daysAgoColor)
             LabelText(label = "Times played: ", value = "${workout.timesPlayed}")
         }
     }
 }
 
 @Composable
-fun LabelText(modifier: Modifier = Modifier, label: String, value: String) {
+fun LabelText(
+    modifier: Modifier = Modifier,
+    label: String,
+    value: String,
+    valueColor: Color = Color.White
+) {
     Row(modifier = modifier) {
         Text(
             modifier = Modifier.width(80.dp),
@@ -101,7 +119,8 @@ fun LabelText(modifier: Modifier = Modifier, label: String, value: String) {
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.h6
+            style = MaterialTheme.typography.h6,
+            color = valueColor
         )
     }
 }
