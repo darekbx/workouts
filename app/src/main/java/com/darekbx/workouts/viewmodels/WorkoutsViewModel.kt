@@ -5,6 +5,7 @@ import android.content.Context.MODE_PRIVATE
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.runtime.mutableStateOf
+import androidx.core.net.toUri
 import androidx.lifecycle.*
 import com.darekbx.workouts.data.WorkoutsDao
 import com.darekbx.workouts.data.dto.MarkerDto
@@ -21,6 +22,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.math.BigInteger
 import java.security.MessageDigest
 import java.util.*
@@ -123,6 +125,7 @@ class WorkoutsViewModel @Inject constructor(
             withContext(Dispatchers.IO) {
                 workoutsDao.deleteWorkoutMarkers(workout.uid)
                 workoutsDao.deleteWorkout(workout.uid)
+                File(context.filesDir, workout.moviePath).delete()
             }
         }
     }
