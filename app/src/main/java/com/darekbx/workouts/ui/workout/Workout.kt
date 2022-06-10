@@ -124,7 +124,7 @@ private fun DisplayVideo(
         DisplayControls(
             Modifier
                 .weight(1F)
-                .padding(32.dp)
+                .padding(16.dp)
                 .fillMaxWidth(),
             onPlayingChanged = { state: Boolean ->
                 exoPlayer.playWhenReady = !state
@@ -142,6 +142,12 @@ private fun DisplayVideo(
                     markerIndex--
                 }
                 exoPlayer.seekTo(marker.time)
+            },
+            onFastRewindClick = {
+                exoPlayer.seekTo(exoPlayer.currentPosition - fastForwardState.value)
+            },
+            onFastForwardClick = {
+                exoPlayer.seekTo(exoPlayer.currentPosition + fastForwardState.value)
             })
     }
 }
@@ -210,6 +216,8 @@ private fun DisplayControls(
     modifier: Modifier = Modifier,
     onPreviousClick: () -> Unit = { },
     onNextClick: () -> Unit = { },
+    onFastRewindClick: () -> Unit = { },
+    onFastForwardClick: () -> Unit = { },
     onPlayingChanged: (Boolean) -> Unit
 ) {
     val buttonColor = ButtonDefaults.buttonColors(
@@ -220,6 +228,15 @@ private fun DisplayControls(
 
     Column(modifier, verticalArrangement = Arrangement.Center) {
         Row(Modifier.height(72.dp)) {
+            Button(
+                modifier = Modifier.fillMaxHeight().padding(end = 4.dp),
+                colors = buttonColor,
+                onClick = { onFastRewindClick() }) {
+                Icon(
+                    painterResource(id = R.drawable.ic_fast_rewind),
+                    contentDescription = "rewind"
+                )
+            }
             Button(
                 modifier = Modifier.fillMaxHeight(),
                 colors = buttonColor,
@@ -252,6 +269,16 @@ private fun DisplayControls(
                 Icon(
                     Icons.Default.ArrowForward,
                     contentDescription = "forward"
+                )
+            }
+            Button(
+                modifier = Modifier.fillMaxHeight().padding(start = 4.dp),
+                colors = buttonColor,
+                onClick = { onFastForwardClick() }
+            ) {
+                Icon(
+                    painterResource(id = R.drawable.exo_icon_fastforward),
+                    contentDescription = "fast_forward"
                 )
             }
         }

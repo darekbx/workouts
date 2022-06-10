@@ -85,8 +85,6 @@ fun FastForwardInterval(
                 ActionButton(
                     text = item.label,
                     checked = value == item,
-                    // TODO: disabled functionality, since there are problems with forward/backward action executed from code
-                    enabled = false
                 ) { onChanged(item) }
             }
         }
