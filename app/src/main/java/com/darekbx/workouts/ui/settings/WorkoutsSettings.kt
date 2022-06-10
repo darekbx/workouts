@@ -1,5 +1,6 @@
 package com.darekbx.workouts.ui.settings
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -10,9 +11,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.runtime.*
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -35,7 +40,8 @@ fun WorkoutsSettings(
     ConstraintLayout {
         val (button) = createRefs()
         ListWorkounts(
-            Modifier.fillMaxSize()
+            Modifier
+                .fillMaxSize()
                 .padding(8.dp),
             workouts = workouts.value,
             onDelete = { workoutsViewModel.delete(it) }
@@ -76,47 +82,67 @@ fun WorkoutItem(
     workout: Workout = defaultWorkout(),
     onDelete: (Workout) -> Unit = { }
 ) {
+    val deleteConfirmation = remember { mutableStateOf(false) }
     val lengthMinutes = TimeUnit.MILLISECONDS.toMinutes(workout.length)
     val lastPlayed = workout.lastPlayed
         .takeIf { it > 0 }
         ?.toFormattedDateTime()
         ?: "N/A"
-    Row(modifier, horizontalArrangement = Arrangement.SpaceBetween) {
+    Row(modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.SpaceBetween) {
         Column(modifier = Modifier.padding(4.dp)) {
             Text(
-                text = "${workout.name}",
+                text = workout.name,
                 style = MaterialTheme.typography.h5
             )
-            LabelText(label = "Length: ", value = "${lengthMinutes} minutes")
+            LabelText(label = "Length: ", value = "$lengthMinutes minutes")
             LabelText(label = "Last played: ", value = lastPlayed)
             LabelText(label = "Times played: ", value = "${workout.timesPlayed}")
         }
         Spacer(modifier = Modifier.weight(1f))
-        /**
-         * TODO: connect Delete and Edit buttons, improve UI
-        Column(verticalArrangement = Arrangement.SpaceEvenly) {
-            CardButton(
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .fillMaxHeight()
+                .width(80.dp)
+        ) {
+            Icon(
+                Icons.Default.Delete,
+                "Delete",
+                modifier =
                 Modifier
-                    .size(56.dp, 56.dp)
-                    .clickable { onDelete(workout) },
-                Icons.Default.Delete
+                    .size(24.dp, 24.dp)
+                    .clickable { deleteConfirmation.value = true },
             )
-            CardButton(
-                Modifier
-                    .size(56.dp, 56.dp)
-                    .clickable { },
-                Icons.Default.Edit
-            )
-        }*/
+        }
+    }
+
+    if (deleteConfirmation.value) {
+        DeleteWorkoutDialog(deleteConfirmation, onDelete, workout)
     }
 }
 
 @Composable
-private fun CardButton(
-    modifier: Modifier = Modifier,
-    icon: ImageVector
+private fun DeleteWorkoutDialog(
+    deleteConfirmation: MutableState<Boolean>,
+    onDelete: (Workout) -> Unit,
+    workout: Workout
 ) {
-    Card(modifier.padding(top = 8.dp, end = 8.dp), elevation = 8.dp) {
-        Icon(modifier = Modifier.padding(4.dp), imageVector = icon, contentDescription = "$icon")
-    }
+    AlertDialog(
+        onDismissRequest = { deleteConfirmation.value = false },
+        dismissButton = {
+            Button(onClick = { deleteConfirmation.value = false }) {
+                Text(text = "Cancel")
+            }
+        },
+        confirmButton = {
+            Button(onClick = {
+                onDelete(workout)
+                deleteConfirmation.value = false
+            }) {
+                Text(text = "Delete")
+            }
+        },
+        title = { Text(text = "Delete") },
+        text = { Text(text = "Delete ${workout.name}?") }
+    )
 }
